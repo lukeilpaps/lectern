@@ -435,6 +435,10 @@ form { display: flex; flex-direction: column; gap: 16px; }
   height: 44px; border-radius: 14px; background: var(--ink-2); border: 1px solid var(--line);
   font-size: 13px; font-weight: 700; color: var(--muted); transition: all .25s var(--pop);
 }
+.nth-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.nth-row .chip-btn { padding: 0; }
+.month-sum { margin: 0; font-size: 14px; color: var(--muted); }
+.month-sum b { color: var(--text); }
 .wd[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: transparent; transform: translateY(-2px); }
 .stepper { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 6px 6px 16px; border-radius: 16px; background: var(--ink-2); border: 1px solid var(--line); }
 .stepper .txt { font-size: 14px; color: var(--muted); }
@@ -550,6 +554,33 @@ form { display: flex; flex-direction: column; gap: 16px; }
 .chip-btn { height: 40px; padding: 0 16px; border-radius: 12px; background: var(--ink-2); border: 1px solid var(--line); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
 .chip-btn[aria-checked="true"] { background: var(--accent); color: var(--on-accent); border-color: transparent; }
 .chip-btn:disabled { opacity: .4; cursor: default; }
+.opts.slide { animation: optSlide .38s var(--spring) both; }
+@keyframes optSlide { from { opacity: .2; transform: translateX(calc(var(--dir, 1) * 28px)); } }
+.menu { display: flex; flex-direction: column; border-radius: 20px; background: var(--ink-2); border: 1px solid var(--line); overflow: hidden; }
+.menu-row {
+  display: grid; grid-template-columns: 40px 1fr 18px; gap: 14px; align-items: center;
+  padding: 13px 14px; text-align: left; transition: background .2s;
+}
+.menu-row + .menu-row { border-top: 1px solid var(--line); }
+.menu-row:active { background: var(--ink-0); }
+.menu-row b { display: block; font-weight: 600; }
+.menu-row small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.menu-row > svg { width: 18px; height: 18px; color: var(--dim); }
+.menu-ic {
+  width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center;
+  background: color-mix(in oklab, var(--accent) 20%, transparent); color: var(--accent);
+}
+.menu-ic svg { width: 20px; height: 20px; }
+.back-btn { display: inline-flex; align-items: center; gap: 2px; height: 40px; padding: 0 12px 0 4px; margin-left: -6px; border-radius: 12px; font-weight: 600; color: var(--muted); }
+.back-btn:hover { background: var(--ink-2); color: var(--text); }
+.back-btn svg { width: 22px; height: 22px; }
+.page-title { margin: -4px 0 18px; font-family: var(--f-display); font-size: 26px; font-weight: 800; letter-spacing: -.01em; }
+.preview-card {
+  height: 104px; border-radius: 20px; padding: 14px 16px; margin: 4px 4px 0;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 2px;
+  background: var(--c); color: var(--on); overflow: hidden; transition: background .3s, color .3s;
+}
+.preview-card .ev-title { font-size: 19px; }
 .fine { margin: 0; font-size: 12px; color: var(--dim); text-align: center; line-height: 1.5; }
 
 .toast {
@@ -641,9 +672,75 @@ form { display: flex; flex-direction: column; gap: 16px; }
     citrus:   { name: "Citrus",    c: ["#ffe66d", "#ff9f1c", "#2ec4b6", "#cbf3f0", "#e71d36", "#7bd389"] },
     graphite: { name: "Graphite",  c: ["#e5e5ea", "#c7c7cc", "#9a9aa3", "#6e6e78", "#48484f", "#2c2c32"] },
   };
+  Object.assign(PALETTES, {
+    autumn:   { name: "Autumn",    c: ["#9c2c13", "#d1603d", "#e9a03b", "#f2d07a", "#6b4226", "#8a9a5b"] },
+    tropical: { name: "Tropical",  c: ["#00b4a6", "#ff6f59", "#ffd23f", "#3bceac", "#ee4266", "#540d6e"] },
+    vapor:    { name: "Vapor",     c: ["#ff71ce", "#01cdfe", "#05ffa1", "#b967ff", "#fffb96", "#7d5cff"] },
+    ice:      { name: "Ice",       c: ["#e0f2ff", "#b3dcff", "#7cc0f5", "#4a90c9", "#2f5d8a", "#c9d6ea"] },
+  });
+  // Triadic schemes: three hues 120° apart on the colour wheel, each in a light and a deep tone.
+  const hslHex = (h, s, l) => {
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1 - l), k = n => (n + h / 30) % 12;
+    const f = n => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)))).toString(16).padStart(2, "0");
+    return "#" + f(0) + f(8) + f(4);
+  };
+  const triad = (name, h, s, l1, l2) => {
+    const hs = [h, h + 120, h + 240].map(x => x % 360);
+    return { name, c: [...hs.map(x => hslHex(x, s, l1)), ...hs.map(x => hslHex(x, s, l2))] };
+  };
+  const TRIADS = {
+    t_festival: triad("Festival", 0, 80, 64, 46),
+    t_ember:    triad("Ember", 18, 85, 64, 44),
+    t_zest:     triad("Zest", 50, 90, 60, 42),
+    t_lagoon:   triad("Lagoon", 185, 70, 62, 40),
+    t_dawn:     triad("Dawn", 200, 80, 82, 66),
+    t_midnight: triad("Midnight", 230, 55, 52, 32),
+    t_jewel:    triad("Jewel", 285, 65, 56, 38),
+    t_bloom:    triad("Bloom", 310, 70, 74, 54),
+    t_sorbet:   triad("Sorbet", 340, 85, 80, 64),
+    t_earth:    triad("Earth", 25, 35, 60, 40),
+  };
+  Object.assign(PALETTES, TRIADS);
+  const PALETTE_GROUPS = [
+    ["Classic", Object.keys(PALETTES).filter(k => !k.startsWith("t_"))],
+    ["Triadic", Object.keys(TRIADS)],
+  ];
+
   const PATTERNS = [["plain", "Plain"], ["lines", "Lines"], ["dots", "Dots"], ["grid", "Grid"], ["waves", "Waves"], ["shapes", "Shapes"], ["rings", "Rings"], ["frame", "Frame"]];
+  // Scenes: simple outline drawings in the same dark grey at 75%, anchored to the card's bottom edge.
+  const tree = (x, h) => `M${x} 63v-7M${x - 9} 56L${x} ${56 - h}L${x + 9} 56Z`;
+  const sun = (x, y, r) => `M${x - r} ${y}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0`;
+  const SCENES = {
+    houses:    { name: "Houses", w: 200, rep: "no-repeat",
+      d: "M2 63.5H198M12 63V36L32 20L52 36V63M26 63V50h12v13M62 63V30L88 10L114 30V63M76 42h10v10H76zM94 42h10v10H94zM100 19V8h7v16M124 63V40L142 27L160 40V63M135 63V52h14v11M178 63V52" + sun(178, 44, 8) },
+    city:      { name: "City", w: 140, rep: "repeat-x",
+      d: "M0 63.5H140M4 63V40h14v23M22 63V22h16v41M42 63V32h12v31M58 63V12h18v51M80 63V36h14v27M98 63V26h12v37M114 63V44h20v19M67 12V5M27 28h6M27 36h6M27 44h6M63 20h8M63 28h8M63 36h8M63 44h8M102 32h4M102 40h4M46 38h4M46 46h4M84 42h6M84 50h6M119 50h4M126 50h4" },
+    mountains: { name: "Mountains", w: 180, rep: "no-repeat",
+      d: "M0 63.5H180M0 63L42 24L62 42L94 12L130 54L148 38L180 63M86 19l8 6l7-7M34 31l8 6l6-5" + sun(157, 18, 7) },
+    hills:     { name: "Hills", w: 180, rep: "no-repeat",
+      d: "M0 58Q40 36 80 52T180 44M0 63.5Q70 46 130 60T180 60M137 5v4M137 31v4M122 20h4M148 20h4M60 18q3-3 6 0q3-3 6 0M84 26q2-2 4 0q2-2 4 0" + sun(137, 20, 9) },
+    forest:    { name: "Forest", w: 120, rep: "repeat-x",
+      d: "M0 63.5H120" + tree(12, 26) + tree(36, 38) + tree(58, 22) + tree(82, 32) + tree(106, 24) },
+    sea:       { name: "Sea", w: 200, rep: "no-repeat",
+      d: "M0 56q10-6 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0M10 63q10-5 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0M108 49h38l-6 6h-26zM124 47V16l18 28zM60 22q3-3 6 0q3-3 6 0" + sun(172, 18, 8) },
+    desert:    { name: "Desert", w: 200, rep: "no-repeat",
+      d: "M0 60Q50 38 100 56T200 50M0 63.5H200M150 58V30a5 5 0 0 1 10 0v28M150 46h-6a3 3 0 0 1 -3-3v-7M160 42h6a3 3 0 0 0 3-3v-7M60 63L80 40L100 63" + sun(40, 16, 8) },
+    night:     { name: "Night", w: 200, rep: "no-repeat",
+      d: "M0 63.5H200M160 10a12 12 0 1 0 12 18a9 9 0 1 1 -12 -18zM40 14v6M37 17h6M90 30v6M87 33h6M120 10v4M118 12h4M20 40v4M18 42h4M10 63V54h16v9M30 63V48h12v15M46 63V56h10v7" },
+  };
+  const SCENE_LIST = Object.entries(SCENES).map(([k, v]) => [k, v.name]);
+  (() => {
+    const ink = `fill="none" stroke="#1c1b22" stroke-opacity=".75" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"`;
+    const css = Object.entries(SCENES).map(([k, v]) => {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${v.w}" height="64" viewBox="0 0 ${v.w} 64"><path d="${v.d}" ${ink}/></svg>`;
+      const pos = v.rep === "repeat-x" ? "0 100%" : "right 0 bottom 0";
+      return `.pat-${k}{--pat:url("data:image/svg+xml,${encodeURIComponent(svg)}");--pat-pos:${pos};--pat-size:auto min(100%, 64px);--pat-rep:${v.rep}}`;
+    }).join("\n");
+    const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+  })();
   const EFFECTS = [["none", "None"], ["neon", "Neon"], ["glow", "Glow"], ["shadow", "Shadow"], ["light", "Light"]];
-  const DEFAULTS = { mode: "dark", palette: "pastel", custom: null, accent: "lilac", pattern: "plain", effect: "none", autoSave: true, remind: false, lead: 10 };
+  const DEFAULTS = { mode: "dark", palette: "pastel", custom: null, accent: "lilac", pattern: "plain", effect: "none", fullscreen: false, autoSave: true, remind: false, lead: 10 };
   const K = { events: "lectern.events.v1", tpl: "lectern.templates.v1", set: "lectern.settings.v1" };
 
   /* ---------- dates ---------- */
@@ -661,6 +758,8 @@ form { display: flex; flex-direction: column; gap: 16px; }
   };
   const mins = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
   const hhmm = m => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`;
+  const ORD = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", "-1": "Last" };
+  const nthOf = d => { const n = Math.ceil(d.getDate() / 7); return n > 4 ? -1 : n; };
   const fmtShort = d => `${DOW[wd(d)]} ${d.getDate()} ${MON[d.getMonth()]}`;
   const dur = m => { const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h} h ${r} m` : `${h} h`) : `${r} m`; };
   const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
@@ -809,6 +908,13 @@ form { display: flex; flex-direction: column; gap: 16px; }
     if (e.repeat === "once") return k === e.startDate;
     if (e.endDate && k > e.endDate) return false;
     if ((e.skips || []).includes(k)) return false;
+    if (e.repeat === "monthly") {
+      if (wd(d) !== e.mday) return false;
+      const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      if (e.nth === -1 ? d.getDate() + 7 <= lastDay : Math.ceil(d.getDate() / 7) !== e.nth) return false;
+      const s = parse(e.startDate);
+      return ((d.getFullYear() - s.getFullYear()) * 12 + d.getMonth() - s.getMonth()) % (e.interval || 1) === 0;
+    }
     const days = e.repeat === "weekly" ? [wd(parse(e.startDate))] : (e.days || []);
     if (!days.includes(wd(d))) return false;
     const weeks = Math.round((dayNum(monday(d)) - dayNum(monday(parse(e.startDate)))) / 7);
@@ -823,6 +929,10 @@ form { display: flex; flex-direction: column; gap: 16px; }
   function repeatText(e) {
     const s = parse(e.startDate);
     if (e.repeat === "once") return `Once · ${fmtShort(s)}`;
+    if (e.repeat === "monthly") {
+      const every = `${ORD[e.nth]} ${DOW_LONG[e.mday]} of ${(e.interval || 1) > 1 ? `every ${e.interval} months` : "every month"}`;
+      return e.endDate ? `${every} · until ${fmtShort(parse(e.endDate))}` : every;
+    }
     const days = e.repeat === "weekly" ? [wd(s)] : [...e.days].sort();
     const names = days.length === 1 ? DOW_LONG[days[0]] : days.map(i => DOW[i]).join(", ");
     const every = (e.interval || 1) > 1 ? `Every ${e.interval} weeks on ${names}` : `Every ${names}`;
@@ -1029,13 +1139,18 @@ form { display: flex; flex-direction: column; gap: 16px; }
         </div>
         <span class="err" id="eTime"></span>
         <div class="field"><span class="label" id="lRepeat">Repeat</span>
-          <div class="seg" role="radiogroup" aria-labelledby="lRepeat"><div class="seg-pill" id="segPill"></div>
+          <div class="seg" role="radiogroup" aria-labelledby="lRepeat" style="--n:4"><div class="seg-pill" id="segPill"></div>
             <button type="button" role="radio" data-rep="once">Once</button>
-            <button type="button" role="radio" data-rep="weekly">Every week</button>
-            <button type="button" role="radio" data-rep="custom">Pick days</button></div>
+            <button type="button" role="radio" data-rep="weekly">Weekly</button>
+            <button type="button" role="radio" data-rep="custom">Days</button>
+            <button type="button" role="radio" data-rep="monthly">Monthly</button></div>
           <div class="reveal" id="revDays"><div><div class="reveal-in">
             <div class="wdays" id="wdays">${DOW.map((n, i) => `<button type="button" class="wd" data-wd="${i}" aria-label="${DOW_LONG[i]}">${n.slice(0, 2)}</button>`).join("")}</div>
             <span class="err" id="eDays"></span></div></div></div>
+          <div class="reveal" id="revMonth"><div><div class="reveal-in">
+            <div class="nth-row" role="radiogroup" aria-label="Which week of the month">${[1, 2, 3, 4, -1].map(n => `<button type="button" class="chip-btn" role="radio" data-nth="${n}">${ORD[n]}</button>`).join("")}</div>
+            <div class="wdays" role="radiogroup" aria-label="Day of the week">${DOW.map((n, i) => `<button type="button" class="wd" role="radio" data-mday="${i}" aria-label="${DOW_LONG[i]}">${n.slice(0, 2)}</button>`).join("")}</div>
+            <p class="month-sum" id="monthTxt"></p></div></div></div>
           <div class="reveal" id="revInterval"><div><div class="reveal-in">
             <div class="stepper"><span class="txt" id="intTxt"></span><span class="ctr">
               <button type="button" id="intMinus" aria-label="Fewer weeks between">−</button><button type="button" id="intPlus" aria-label="More weeks between">+</button></span></div></div></div></div>
@@ -1050,13 +1165,20 @@ form { display: flex; flex-direction: column; gap: 16px; }
 
     const body = $("#sheetBody");
     body.querySelectorAll(".sw").forEach(b => (b.onclick = () => { form.color = b.dataset.color; syncSwatches(); }));
-    body.querySelectorAll("[data-rep]").forEach(b => (b.onclick = () => { form.repeat = b.dataset.rep; pickPhase = 0; syncForm(); }));
-    body.querySelectorAll(".wd").forEach(b => (b.onclick = () => {
+    body.querySelectorAll("[data-rep]").forEach(b => (b.onclick = () => {
+      form.repeat = b.dataset.rep; pickPhase = 0;
+      if (form.repeat === "monthly" && form.nth == null) { const s = parse(form.startDate); form.nth = nthOf(s); form.mday = wd(s); }
+      if (form.repeat === "monthly" && form.interval > 12) form.interval = 12;
+      syncForm();
+    }));
+    body.querySelectorAll("[data-wd]").forEach(b => (b.onclick = () => {
       const i = +b.dataset.wd; form.days = form.days.includes(i) ? form.days.filter(x => x !== i) : [...form.days, i]; syncForm();
     }));
+    body.querySelectorAll("[data-nth]").forEach(b => (b.onclick = () => { form.nth = +b.dataset.nth; syncForm(); }));
+    body.querySelectorAll("[data-mday]").forEach(b => (b.onclick = () => { form.mday = +b.dataset.mday; syncForm(); }));
     body.querySelectorAll(".tpl").forEach(b => (b.onclick = () => applyTemplate(b.dataset.tpl)));
     $("#intMinus").onclick = () => { form.interval = Math.max(1, form.interval - 1); syncForm(); };
-    $("#intPlus").onclick = () => { form.interval = Math.min(8, form.interval + 1); syncForm(); };
+    $("#intPlus").onclick = () => { form.interval = Math.min(form.repeat === "monthly" ? 12 : 8, form.interval + 1); syncForm(); };
     $("#dateBtn").onclick = () => { calOpen = !calOpen; pickPhase = 0; syncForm(); };
     $("#fSave").onclick = () => { form.saveTpl = !form.saveTpl; $("#fSave").setAttribute("aria-checked", form.saveTpl); };
     $("#lecForm").onsubmit = submitForm;
@@ -1077,15 +1199,23 @@ form { display: flex; flex-direction: column; gap: 16px; }
   }
 
   function syncForm() {
-    const rep = form.repeat, idx = { once: 0, weekly: 1, custom: 2 }[rep];
+    const rep = form.repeat, idx = { once: 0, weekly: 1, custom: 2, monthly: 3 }[rep];
     $("#segPill").style.transform = `translateX(${idx * 100}%)`;
     document.querySelectorAll("[data-rep]").forEach(b => b.setAttribute("aria-checked", b.dataset.rep === rep));
     $("#revDays").classList.toggle("open", rep === "custom");
+    $("#revMonth").classList.toggle("open", rep === "monthly");
     $("#revInterval").classList.toggle("open", rep !== "once");
-    document.querySelectorAll(".wd").forEach(b => b.setAttribute("aria-pressed", form.days.includes(+b.dataset.wd)));
-    const dayWord = rep === "weekly" ? DOW_LONG[wd(parse(form.startDate))] : "the days you picked";
-    $("#intTxt").innerHTML = form.interval === 1 ? `Every <b>week</b> on ${dayWord}` : `Every <b>${form.interval} weeks</b> on ${dayWord}`;
-    $("#intMinus").disabled = form.interval <= 1; $("#intPlus").disabled = form.interval >= 8;
+    document.querySelectorAll("[data-wd]").forEach(b => b.setAttribute("aria-pressed", form.days.includes(+b.dataset.wd)));
+    document.querySelectorAll("[data-nth]").forEach(b => b.setAttribute("aria-checked", +b.dataset.nth === form.nth));
+    document.querySelectorAll("[data-mday]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.mday === form.mday));
+    if (rep === "monthly") {
+      $("#monthTxt").innerHTML = `<b>${ORD[form.nth]} ${DOW_LONG[form.mday]}</b> of the month`;
+      $("#intTxt").innerHTML = form.interval === 1 ? `Every <b>month</b>` : `Every <b>${form.interval} months</b>`;
+    } else {
+      const dayWord = rep === "weekly" ? DOW_LONG[wd(parse(form.startDate))] : "the days you picked";
+      $("#intTxt").innerHTML = form.interval === 1 ? `Every <b>week</b> on ${dayWord}` : `Every <b>${form.interval} weeks</b> on ${dayWord}`;
+    }
+    $("#intMinus").disabled = form.interval <= 1; $("#intPlus").disabled = form.interval >= (rep === "monthly" ? 12 : 8);
     const s = parse(form.startDate), e = parse(form.endDate || form.startDate);
     $("#dateBtn").innerHTML = (rep === "once"
       ? `<span class="date-pair"><span><small>On</small><b>${fmtShort(s)} ${s.getFullYear()}</b></span></span>`
@@ -1195,102 +1325,174 @@ form { display: flex; flex-direction: column; gap: 16px; }
   const canNotify = () => !IN_CLAUDE && "Notification" in window;
   let installEvt = null;
   addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; });
-  const isInstalled = () => matchMedia("(display-mode: standalone)").matches;
-
-  function openOptions() {
-    openSheet(`<div class="sheet-head"><h2 id="sheetTitle">Options</h2>${closeBtn}</div><div class="opts" id="opts"></div>`, "");
-    renderOptions();
+  // "display-mode: fullscreen" also matches a browser tab put in full screen by the switch below,
+  // so only count it as the installed app when no element holds full screen.
+  const appFullscreen = () => matchMedia("(display-mode: fullscreen)").matches && !document.fullscreenElement;
+  const isInstalled = () => matchMedia("(display-mode: standalone)").matches || appFullscreen();
+  // The installed app already opens full screen; in a browser tab the switch in Options does it.
+  const canFullscreen = () => !IN_CLAUDE && !!document.fullscreenEnabled && !appFullscreen();
+  async function setFullscreen(on) {
+    try {
+      if (on && !document.fullscreenElement) await root.requestFullscreen({ navigationUI: "hide" });
+      if (!on && document.fullscreenElement) await document.exitFullscreen();
+    } catch {}
   }
-  function renderOptions() {
-    const box = $("#opts"); if (!box) return;
-    const s = state.settings, body = $("#sheetBody"), keep = body.scrollTop;
-    const modes = [["system", "System"], ["dark", "Dark"], ["light", "Light"]];
-    const cols = paletteColors();
-    const examples = state.events.some(e => e.sample);
-    const notifyState = !canNotify() ? "unsupported" : Notification.permission;
-    box.innerHTML = `
-      <section class="opt"><h3 class="label">Appearance</h3>
-        <div class="seg" role="radiogroup" aria-label="Appearance"><div class="seg-pill" style="transform:translateX(${modes.findIndex(m => m[0] === s.mode) * 100}%)"></div>
-          ${modes.map(([v, l]) => `<button type="button" role="radio" data-mode="${v}" aria-checked="${s.mode === v}">${l}</button>`).join("")}</div>
-      </section>
+  // Browsers only allow full screen after a tap, so re-enter it on the first tap after opening.
+  addEventListener("pointerdown", () => { if (state.settings.fullscreen && canFullscreen()) setFullscreen(true); }, { once: true });
+  document.addEventListener("fullscreenchange", () => { requestAnimationFrame(placePill); renderOptions(); });
 
-      <section class="opt"><h3 class="label">Colour theme</h3>
-        <div class="pal-list" role="radiogroup" aria-label="Colour theme">
-          ${Object.entries(PALETTES).map(([k, p]) => `<button type="button" class="pal" role="radio" data-pal="${k}" aria-checked="${s.palette === k}"><span>${p.name}</span><span class="pal-strip">${p.c.map(c => `<i style="--d:${c}"></i>`).join("")}</span></button>`).join("")}
-          <button type="button" class="pal" role="radio" data-pal="custom" aria-checked="${s.palette === "custom"}"><span>Custom</span><span class="pal-strip">${(s.custom || cols).map(c => `<i style="--d:${c}"></i>`).join("")}</span></button>
-        </div>
-        ${s.palette === "custom" ? `<p class="opt-note">Tap a colour to change it.</p><div class="custom-grid">${SLOTS.map((k, i) => `<label class="cc"><span class="chip" style="${cardVars(k)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><input type="color" id="cc${i}" data-i="${i}" value="${cols[i]}">${i + 1}</label>`).join("")}</div>` : ""}
-        <h4 class="label" style="margin-top:6px">Accent</h4>
-        <div class="swatches" role="radiogroup" aria-label="Accent colour">${SLOTS.map((c, i) => `<button type="button" class="sw" role="radio" data-accent="${c}" aria-label="Accent colour ${i + 1}" aria-checked="${s.accent === c}" style="--c:var(--${c})"></button>`).join("")}</div>
-      </section>
+  // Options is a short menu; each row opens its own page with a back button.
+  let optPage = null;
+  const OPT_PAGES = { look: "Appearance & colours", design: "Card design", saved: "Saved lectures", notify: "Notifications", app: "Install app", examples: "Example lectures" };
+  const OPT_ICONS = {
+    look: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>',
+    design: '<rect x="3" y="5" width="18" height="14" rx="4"/><path d="M3 16l5-4 4 3 3-2 6 4"/>',
+    saved: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+    notify: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+    app: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',
+    examples: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  };
+  const svgIc = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const MODES = [["system", "System"], ["dark", "Dark"], ["light", "Light"]];
+  const palName = () => state.settings.palette === "custom" ? "Custom colours" : (PALETTES[state.settings.palette] || PALETTES.pastel).name;
+  const designName = () => {
+    const s = state.settings, p = [...PATTERNS, ...SCENE_LIST].find(x => x[0] === s.pattern), f = EFFECTS.find(x => x[0] === s.effect);
+    return `${p ? p[1] : "Plain"} · ${f && f[0] !== "none" ? f[1] + " effect" : "no effect"}`;
+  };
+  const palBtn = (k, p) => `<button type="button" class="pal" role="radio" data-pal="${k}" aria-checked="${state.settings.palette === k}"><span>${p.name}</span><span class="pal-strip">${p.c.map(c => `<i style="--d:${c}"></i>`).join("")}</span></button>`;
+  const previewCard = () => `<div class="preview-card ${patClass()}" style="${cardVars(state.settings.accent)}"><span class="ev-time">09:00–10:30</span><span class="ev-title">Linear Algebra</span><span class="ev-meta">Lecture Theatre 2 · Dr. R. Abela</span></div>`;
 
-      <section class="opt"><h3 class="label">Card style</h3>
-        <div class="pat-grid" role="radiogroup" aria-label="Card style">
-          ${PATTERNS.map(([k, l], i) => `<button type="button" class="pat-tile" role="radio" data-pat="${k}" aria-checked="${s.pattern === k}"><span class="mini patterned pat-${k}" style="${cardVars(SLOTS[i % 6])}"></span>${l}</button>`).join("")}
-        </div>
-        <p class="opt-note">Patterns are drawn in dark grey at 75% opacity and fade out behind the text.</p>
-      </section>
+  function openOptions() { optPage = null; openSheet("", ""); renderOptions(0); }
+  function goOpt(page) { const dir = page ? 1 : -1; optPage = page; renderOptions(dir); }
 
-      <section class="opt"><h3 class="label">Card effect</h3>
-        <div class="fx-grid" role="radiogroup" aria-label="Card effect">
-          ${EFFECTS.map(([k, l], i) => `<button type="button" class="pat-tile" role="radio" data-fx="${k}" aria-checked="${s.effect === k}"><span class="mini patterned pat-${s.pattern} fx-${k}" style="${cardVars(SLOTS[(i + 1) % 6])}"></span>${l}</button>`).join("")}
-        </div>
-      </section>
-
-      <section class="opt"><h3 class="label">Saved lectures</h3>
-        <button type="button" class="switch-row" id="oAuto" role="switch" aria-checked="${s.autoSave}"><span><b>Save new lectures automatically</b><small>They appear at the top of the new lecture form.</small></span><span class="switch"></span></button>
-        ${state.templates.length ? `<div class="saved-list">${state.templates.map(t => `<div class="saved" style="--c:var(--${t.color})"><i></i><span><b>${esc(t.title)}</b><small>${dur(t.duration)}${t.room ? " · " + esc(t.room) : ""}</small></span><button type="button" class="icon-btn" data-deltpl="${t.id}" aria-label="Remove ${esc(t.title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`).join("")}</div>` : `<p class="opt-note">Nothing saved yet. Lectures you add are kept here so you can pick them again.</p>`}
-      </section>
-
-      <section class="opt"><h3 class="label">Notifications</h3>
-        ${notifyState === "unsupported"
-          ? `<p class="opt-note">Reminders work in the installed app on your phone. Open Lectern from your home screen to turn them on.</p>`
-          : `<button type="button" class="switch-row" id="oRemind" role="switch" aria-checked="${s.remind && notifyState === "granted"}"><span><b>Lecture reminders</b><small>${notifyState === "denied" ? "Notifications are blocked. Allow them in your phone's Settings › Apps › Lectern › Notifications." : "A notification before each lecture starts."}</small></span><span class="switch"></span></button>
-             <div class="chips" role="radiogroup" aria-label="Remind me before">${[5, 10, 15, 30].map(n => `<button type="button" class="chip-btn" role="radio" data-lead="${n}" aria-checked="${s.lead === n}">${n} min before</button>`).join("")}</div>
-             <p class="opt-note">Your phone may pause Lectern when it's closed. For reminders that always arrive, add your timetable to your phone's calendar too.</p>
-             <div class="chips"><button type="button" class="btn ghost" id="oIcs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="4"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>Add to phone calendar</button>
-             ${s.remind && notifyState === "granted" ? `<button type="button" class="btn ghost" id="oTest">Send a test</button>` : ""}</div>`}
-      </section>
-
-      ${!IN_CLAUDE && (installEvt || !isInstalled()) ? `<section class="opt"><h3 class="label">App</h3>
-        ${installEvt ? `<button type="button" class="btn primary" id="oInstall">Install Lectern on this phone</button>` : `<p class="opt-note">To install, open your browser menu and choose <b>Add to Home screen</b> or <b>Install app</b>.</p>`}</section>` : ""}
-
-      ${examples ? `<section class="opt"><h3 class="label">Example lectures</h3><button type="button" class="btn danger" id="oSamples">Remove example lectures</button></section>` : ""}
-
+  function menuHtml() {
+    const s = state.settings, notifyOn = s.remind && canNotify() && Notification.permission === "granted";
+    const rows = [
+      ["look", `${MODES.find(m => m[0] === s.mode)[1]} · ${palName()}`],
+      ["design", designName()],
+      ["saved", state.templates.length ? `${state.templates.length} saved · ${s.autoSave ? "auto-save on" : "auto-save off"}` : "None yet"],
+      ["notify", notifyOn ? `On · ${s.lead} min before` : "Off"],
+      !IN_CLAUDE && (installEvt || !isInstalled()) && ["app", installEvt ? "Install Lectern on this phone" : "Add Lectern to your home screen"],
+      state.events.some(e => e.sample) && ["examples", "Shown in your timetable"],
+    ].filter(Boolean);
+    return `${previewCard()}
+      <div class="menu">${rows.map(([k, sub]) => `<button type="button" class="menu-row" data-go="${k}"><span class="menu-ic">${svgIc(OPT_ICONS[k])}</span><span><b>${OPT_PAGES[k]}</b><small>${sub}</small></span>${svgIc('<path d="M9 6l6 6-6 6"/>')}</button>`).join("")}</div>
       <p class="fine">${col ? "Synced to your Claude account." : "Your timetable is stored on this device."}</p>`;
-    body.scrollTop = keep;
+  }
 
-    box.querySelectorAll("[data-mode]").forEach(b => (b.onclick = () => { s.mode = b.dataset.mode; saveSettings(); renderOptions(); }));
-    box.querySelectorAll("[data-pal]").forEach(b => (b.onclick = () => {
+  function pageHtml(page) {
+    const s = state.settings, cols = paletteColors();
+    if (page === "look") return `
+      <section class="opt"><h3 class="label">Appearance</h3>
+        <div class="seg" role="radiogroup" aria-label="Appearance"><div class="seg-pill" style="transform:translateX(${MODES.findIndex(m => m[0] === s.mode) * 100}%)"></div>
+          ${MODES.map(([v, l]) => `<button type="button" role="radio" data-mode="${v}" aria-checked="${s.mode === v}">${l}</button>`).join("")}</div>
+        ${canFullscreen() ? `<button type="button" class="switch-row" id="oFull" role="switch" aria-checked="${!!document.fullscreenElement}"><span><b>Full screen</b><small>Hides the status bar while Lectern is open. Swipe down from the top edge to see it again.</small></span><span class="switch"></span></button>` : ""}
+      </section>
+      ${PALETTE_GROUPS.map(([g, keys]) => `<section class="opt"><h3 class="label">${g}</h3>
+        ${g === "Triadic" ? `<p class="opt-note">Three colours spaced evenly around the colour wheel, each in a light and a deep tone.</p>` : ""}
+        <div class="pal-list" role="radiogroup" aria-label="${g} colour schemes">${keys.map(k => palBtn(k, PALETTES[k])).join("")}</div></section>`).join("")}
+      <section class="opt"><h3 class="label">Custom</h3>
+        <div class="pal-list">${palBtn("custom", { name: "Custom", c: s.custom || cols })}</div>
+        ${s.palette === "custom" ? `<p class="opt-note">Tap a colour to change it.</p><div class="custom-grid">${SLOTS.map((k, i) => `<label class="cc"><span class="chip" style="${cardVars(k)}">${svgIc('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>')}</span><input type="color" id="cc${i}" data-i="${i}" value="${cols[i]}">${i + 1}</label>`).join("")}</div>` : ""}
+      </section>
+      <section class="opt"><h3 class="label">Accent</h3>
+        <div class="swatches" role="radiogroup" aria-label="Accent colour">${SLOTS.map((c, i) => `<button type="button" class="sw" role="radio" data-accent="${c}" aria-label="Accent colour ${i + 1}" aria-checked="${s.accent === c}" style="--c:var(--${c})"></button>`).join("")}</div>
+      </section>`;
+
+    if (page === "design") {
+      const tiles = list => list.map(([k, l], i) => `<button type="button" class="pat-tile" role="radio" data-pat="${k}" aria-checked="${s.pattern === k}"><span class="mini patterned pat-${k}" style="${cardVars(SLOTS[i % 6])}"></span>${l}</button>`).join("");
+      return `${previewCard()}
+        <section class="opt"><h3 class="label">Patterns</h3><div class="pat-grid" role="radiogroup" aria-label="Patterns">${tiles(PATTERNS)}</div></section>
+        <section class="opt"><h3 class="label">Scenes</h3><div class="pat-grid" role="radiogroup" aria-label="Scenes">${tiles(SCENE_LIST)}</div>
+          <p class="opt-note">Patterns and scenes are drawn in dark grey at 75% opacity and fade out behind the text.</p></section>
+        <section class="opt"><h3 class="label">Effect</h3>
+          <div class="fx-grid" role="radiogroup" aria-label="Card effect">
+            ${EFFECTS.map(([k, l], i) => `<button type="button" class="pat-tile" role="radio" data-fx="${k}" aria-checked="${s.effect === k}"><span class="mini patterned pat-${s.pattern} fx-${k}" style="${cardVars(SLOTS[(i + 1) % 6])}"></span>${l}</button>`).join("")}
+          </div></section>`;
+    }
+
+    if (page === "saved") return `
+      <section class="opt">
+        <button type="button" class="switch-row" id="oAuto" role="switch" aria-checked="${s.autoSave}"><span><b>Save new lectures automatically</b><small>They appear at the top of the new lecture form.</small></span><span class="switch"></span></button>
+        ${state.templates.length ? `<div class="saved-list">${state.templates.map(t => `<div class="saved" style="--c:var(--${t.color})"><i></i><span><b>${esc(t.title)}</b><small>${dur(t.duration)}${t.room ? " · " + esc(t.room) : ""}</small></span><button type="button" class="icon-btn" data-deltpl="${t.id}" aria-label="Remove ${esc(t.title)}">${svgIc(OPT_ICONS.examples)}</button></div>`).join("")}</div>` : `<p class="opt-note">Nothing saved yet. Lectures you add are kept here so you can pick them again.</p>`}
+      </section>`;
+
+    if (page === "notify") {
+      const ns = !canNotify() ? "unsupported" : Notification.permission;
+      if (ns === "unsupported") return `<p class="opt-note">Reminders work in the installed app on your phone. Open Lectern from your home screen to turn them on.</p>`;
+      return `
+        <section class="opt">
+          <button type="button" class="switch-row" id="oRemind" role="switch" aria-checked="${s.remind && ns === "granted"}"><span><b>Lecture reminders</b><small>${ns === "denied" ? "Notifications are blocked. Allow them in your phone's Settings › Apps › Lectern › Notifications." : "A notification before each lecture starts."}</small></span><span class="switch"></span></button>
+          <div class="chips" role="radiogroup" aria-label="Remind me before">${[5, 10, 15, 30].map(n => `<button type="button" class="chip-btn" role="radio" data-lead="${n}" aria-checked="${s.lead === n}">${n} min before</button>`).join("")}</div>
+          ${s.remind && ns === "granted" ? `<div class="chips"><button type="button" class="btn ghost" id="oTest">Send a test</button></div>` : ""}
+        </section>
+        <section class="opt"><h3 class="label">Reminders that always arrive</h3>
+          <p class="opt-note">Your phone may pause Lectern when it's closed. Adding your timetable to your phone's calendar gives you an alarm before every lecture, even then.</p>
+          <div class="chips"><button type="button" class="btn ghost" id="oIcs">${svgIc('<rect x="3" y="5" width="18" height="16" rx="4"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/>')}Add to phone calendar</button></div>
+        </section>`;
+    }
+
+    if (page === "app") return installEvt
+      ? `<button type="button" class="btn primary" id="oInstall">Install Lectern on this phone</button>`
+      : `<p class="opt-note">Open your browser menu and choose <b>Add to Home screen</b> or <b>Install app</b>. Lectern then opens full screen from its own icon.</p>`;
+
+    if (page === "examples") return `
+      <p class="opt-note">The example lectures show how a filled timetable looks. Removing them doesn't touch the lectures you added.</p>
+      <button type="button" class="btn danger" id="oSamples">Remove example lectures</button>`;
+    return "";
+  }
+
+  function renderOptions(dir) {
+    const body = $("#sheetBody");
+    if (dir === undefined && !$("#opts")) return;     // options aren't open
+    const keep = dir === undefined ? body.scrollTop : 0;
+    const head = optPage
+      ? `<div class="sheet-head"><button type="button" class="back-btn" id="optBack">${svgIc('<path d="M15 6l-6 6 6 6"/>')}Options</button>${closeBtn}</div><h2 class="page-title" id="sheetTitle">${OPT_PAGES[optPage]}</h2>`
+      : `<div class="sheet-head"><h2 id="sheetTitle">Options</h2>${closeBtn}</div>`;
+    body.innerHTML = `${head}<div class="opts${dir ? " slide" : ""}" id="opts" style="--dir:${dir < 0 ? -1 : 1}">${optPage ? pageHtml(optPage) : menuHtml()}</div>`;
+    body.scrollTop = keep;
+    body.querySelectorAll("[data-close]").forEach(b => (b.onclick = closeSheet));
+    const back = $("#optBack"); if (back) back.onclick = () => goOpt(null);
+    bindOptions();
+  }
+
+  function bindOptions() {
+    const box = $("#opts"), s = state.settings;
+    const on = (sel, fn) => box.querySelectorAll(sel).forEach(b => (b.onclick = () => fn(b)));
+    on("[data-go]", b => goOpt(b.dataset.go));
+    on("[data-mode]", b => { s.mode = b.dataset.mode; saveSettings(); renderOptions(); });
+    on("[data-pal]", b => {
       if (b.dataset.pal === "custom" && !s.custom) s.custom = [...paletteColors()];
       s.palette = b.dataset.pal; saveSettings(); renderOptions(); render();
-    }));
+    });
     box.querySelectorAll(".cc input").forEach(inp => {
       inp.oninput = () => { s.custom = s.custom.map((c, i) => i === +inp.dataset.i ? inp.value : c); applySettings(); };
       inp.onchange = () => { saveSettings(); renderOptions(); render(); };
     });
-    box.querySelectorAll("[data-accent]").forEach(b => (b.onclick = () => { s.accent = b.dataset.accent; saveSettings(); renderOptions(); }));
-    box.querySelectorAll("[data-pat]").forEach(b => (b.onclick = () => { s.pattern = b.dataset.pat; saveSettings(); renderOptions(); render(); }));
-    box.querySelectorAll("[data-fx]").forEach(b => (b.onclick = () => { s.effect = b.dataset.fx; saveSettings(); renderOptions(); render(); }));
-    $("#oAuto").onclick = () => { s.autoSave = !s.autoSave; saveSettings(); renderOptions(); };
-    box.querySelectorAll("[data-deltpl]").forEach(b => (b.onclick = () => { state.templates = state.templates.filter(t => t.id !== b.dataset.deltpl); saveTemplates(); renderOptions(); }));
-    const rem = $("#oRemind");
-    if (rem) rem.onclick = async () => {
+    on("[data-accent]", b => { s.accent = b.dataset.accent; saveSettings(); renderOptions(); });
+    on("[data-pat]", b => { s.pattern = b.dataset.pat; saveSettings(); renderOptions(); render(); });
+    on("[data-fx]", b => { s.effect = b.dataset.fx; saveSettings(); renderOptions(); render(); });
+    on("#oFull", async () => {
+      s.fullscreen = !document.fullscreenElement;
+      await setFullscreen(s.fullscreen); saveSettings(); renderOptions();
+    });
+    on("#oAuto", () => { s.autoSave = !s.autoSave; saveSettings(); renderOptions(); });
+    on("[data-deltpl]", b => { state.templates = state.templates.filter(t => t.id !== b.dataset.deltpl); saveTemplates(); renderOptions(); });
+    on("#oRemind", async () => {
       if (s.remind && Notification.permission === "granted") { s.remind = false; saveSettings(); scheduleReminders(); return renderOptions(); }
       const p = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
       s.remind = p === "granted"; saveSettings(); scheduleReminders(); renderOptions();
       if (p === "granted") toast(`Reminders on · ${s.lead} min before`);
-    };
-    box.querySelectorAll("[data-lead]").forEach(b => (b.onclick = () => { s.lead = +b.dataset.lead; saveSettings(); scheduleReminders(); renderOptions(); }));
-    const ics = $("#oIcs"); if (ics) ics.onclick = exportCalendar;
-    const test = $("#oTest"); if (test) test.onclick = () => notify({ id: "test", title: "Test reminder", from: hhmm(new Date().getHours() * 60 + new Date().getMinutes()), to: "", room: "Lectern" }, true);
-    const inst = $("#oInstall"); if (inst) inst.onclick = async () => { installEvt.prompt(); await installEvt.userChoice.catch(() => {}); installEvt = null; renderOptions(); };
-    const smp = $("#oSamples");
-    if (smp) smp.onclick = () => {
-      if (!smp.classList.contains("arm")) { smp.classList.add("arm"); smp.textContent = "Tap again to remove"; return; }
+    });
+    on("[data-lead]", b => { s.lead = +b.dataset.lead; saveSettings(); scheduleReminders(); renderOptions(); });
+    on("#oIcs", exportCalendar);
+    on("#oTest", () => notify({ id: "test", title: "Test reminder", from: hhmm(new Date().getHours() * 60 + new Date().getMinutes()), to: "", room: "Lectern" }, true));
+    on("#oInstall", async () => { installEvt.prompt(); await installEvt.userChoice.catch(() => {}); installEvt = null; goOpt(null); });
+    on("#oSamples", b => {
+      if (!b.classList.contains("arm")) { b.classList.add("arm"); b.textContent = "Tap again to remove"; return; }
       state.events.filter(e => e.sample).forEach(e => deleteEvent(e.id));
-      toast("Example lectures removed"); renderOptions();
-    };
+      toast("Example lectures removed"); goOpt(null);
+    });
   }
 
   /* ---------- reminders ---------- */
@@ -1334,7 +1536,10 @@ form { display: flex; flex-direction: column; gap: 16px; }
         `DTSTART:${ymd(key(first))}T${t(e.from)}`, `DTEND:${ymd(key(first))}T${t(e.to)}`, `SUMMARY:${txt(e.title)}`);
       if (e.room) L.push(`LOCATION:${txt(e.room)}`);
       if (e.lecturer) L.push(`DESCRIPTION:${txt("Lecturer: " + e.lecturer)}`);
-      if (e.repeat !== "once") {
+      if (e.repeat === "monthly") {
+        L.push(`RRULE:FREQ=MONTHLY;INTERVAL=${e.interval || 1};BYDAY=${e.nth}${BY[e.mday]}${e.endDate ? `;UNTIL=${ymd(e.endDate)}T235959` : ""}`);
+        (e.skips || []).forEach(k => L.push(`EXDATE:${ymd(k)}T${t(e.from)}`));
+      } else if (e.repeat !== "once") {
         const days = e.repeat === "weekly" ? [wd(parse(e.startDate))] : e.days;
         L.push(`RRULE:FREQ=WEEKLY;WKST=MO;INTERVAL=${e.interval || 1};BYDAY=${days.map(i => BY[i]).join(",")}${e.endDate ? `;UNTIL=${ymd(e.endDate)}T235959` : ""}`);
         (e.skips || []).forEach(k => L.push(`EXDATE:${ymd(k)}T${t(e.from)}`));

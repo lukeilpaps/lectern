@@ -1,6 +1,6 @@
 // Lectern service worker: keeps the app working offline.
 // Bump VERSION whenever you change index.html so phones pick up the new copy.
-const VERSION = "lectern-v4";
+const VERSION = "lectern-v6";
 const FONTS = "lectern-fonts";
 const SHELL = [
   "./",
